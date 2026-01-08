@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --main-bg: linear-gradient(135deg, #e0f2fe 0%, #f5f3ff 50%, #fef3c7 100%);
+      --glass: rgba(255, 255, 255, 0.65);
+      --pastel-blue: #dbeafe; --pastel-green: #dcfce7; --pastel-red: #fee2e2; --pastel-lavender: #f3f0ff; --text-dark: #1e293b;
+      --pastel-peach: #ffedd5;
+    }
+
+    @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+    .error-shake { animation: shake 0.3s ease-in-out 2; border: 1px solid #ef4444 !important; }
+
+    body { font-family: 'Quicksand', sans-serif; background: var(--main-bg); background-attachment: fixed; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: var(--text-dark); overflow-x: hidden; }
+    .dashboard { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 32px; width: 100%; max-width: 440px; padding: 30px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1); text-align: center; animation: float 6s ease-in-out infinite; position: relative; }
+
+    .side-drawer { position: fixed; top: 0; right: -420px; width: 380px; height: 100%; background: white; box-shadow: -15px 0 35px rgba(0,0,0,0.1); transition: 0.5s cubic-bezier(0.165, 0.84, 0.44, 1); z-index: 100; padding: 40px 25px; border-radius: 35px 0 0 35px; overflow-y: auto; text-align: left; }
+    .side-drawer.open { right: 0; }
+    .drawer-header { font-weight: 700; font-size: 1.6rem; color: #6366f1; margin-bottom: 25px; border-bottom: 2px solid var(--pastel-lavender); padding-bottom: 10px; text-align: center; }
+    
+    .instruction-step { margin-bottom: 18px; padding: 18px; border-radius: 20px; background: #fbfbfb; border: 1px solid #eee; position: relative; }
+    .step-num { position: absolute; top: -10px; left: -10px; background: #6366f1; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3); }
+    .instruction-step b { color: #4f46e5; display: block; margin-bottom: 5px; font-size: 1rem; }
+    .instruction-step p { margin: 0; font-size: 0.85rem; line-height: 1.6; color: #555; }
+    
+    .col-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.8rem; }
+    .col-table td { padding: 8px; border-bottom: 1px solid #eee; }
+    .col-id { font-weight: bold; color: #6366f1; width: 25%; }
+
+    .code-snippet { background: #f1f5f9; padding: 2px 5px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; color: #be185d; font-weight: bold; }
+    .highlight-red { color: #dc2626; font-weight: bold; }
+    .highlight-blue { color: #2563eb; font-weight: bold; }
+    .help-icon { position: absolute; top: 20px; right: 20px; font-size: 1.4rem; cursor: pointer; opacity: 0.7; }
+    
+    .section { background: rgba(255, 255, 255, 0.4); border-radius: 24px; padding: 22px; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.2); }
+    input { width: 100%; padding: 14px 16px; margin-bottom: 12px; border: 1px solid transparent; border-radius: 14px; background: rgba(255, 255, 255, 0.9); font-family: inherit; box-sizing: border-box; outline: none; transition: 0.3s; }
+    .btn { width: 100%; padding: 15px; border: none; border-radius: 16px; font-family: inherit; font-weight: 700; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 8px; font-size: 0.95rem; }
+    .btn-blue { background: var(--pastel-blue); color: #1e40af; }
+    .btn-green { background: var(--pastel-green); color: #166534; }
+    #reader { width: 100%; border-radius: 18px; overflow: hidden; margin-top: 15px; border: 4px solid #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+    .status-pill { display: inline-block; margin-top: 15px; padding: 8px 18px; background: rgba(255,255,255,0.6); border-radius: 50px; font-size: 0.8rem; font-weight: 600; color: #64748b; }
+  </style>
+</head>
+<body>
+
+  <div id="drawer" class="side-drawer">
+    <div class="drawer-header">🚀 Setup Checklist</div>
+    
+    <div class="instruction-step">
+      <div class="step-num">1</div>
+      <b>Spreadsheet & Exact Columns</b>
+      <p>Rename tab to <span class="code-snippet">Attendees</span>. Automation detects these exact columns for fluent operation, Hence the Column and the Column name must be the same as listed - :</p>
+      <table class="col-table">
+        <tr><td class="col-id">Col B</td><td><b>Full Name</b></td></tr>
+        <tr><td class="col-id">Col C</td><td><b>Email Address</b></td></tr>
+        <tr><td class="col-id">Col F</td><td><b>Attended</b></td></tr>
+        <tr><td class="col-id">Col G</td><td><b>QR Status</b></td></tr>
+      </table>
+      <p style="margin-top:8px;"><i>Note: Do not touch Col F & G. Scanner writes "Yes" in F, and Sync writes "SENT" in G automatically.</i></p>
+    </div>
+
+    <div class="instruction-step">
+      <div class="step-num">2</div>
+      <b>Certificate Template</b>
+      <p>Add <span class="code-snippet">{{Name}}</span> to your Google Slide.This slide is going to be your template for the certificate. This is <b>case-sensitive</b>. The script swaps this exact tag with the Guest Name.</p>
+    </div>
+
+  <div class="instruction-step">
+    <div class="step-num">3</div>
+    <b>Drive folder for saving certificates<b>
+      <p>Create a new folder, name it as <span class="highlight-red">Event Certificates</span> and save it to your drive, open it and copy the ID mentioned at the end of the url</p> 
+      <p style="margin-top:8px;"><i>Note: Keep the Sheet tab name, folder name, column headers and columns the same as provided in order to avoid any kind of error.</i></p>
+      </div>
+
+    <div class="instruction-step">
+      <div class="step-num">4</div>
+      <b>Vital Public Sharing</b>
+      <p>Set these files to <span class="highlight-blue">"Anyone with link"</span> as <span class="highlight-blue">"Editor"</span> for the automation to work:</p>
+      <p>✅ <b>Google Sheet</b> (The Database)<br>
+         ✅ <b>Google Slide</b> (The Template)<br>
+         ✅ <b>Drive Folder</b> (The Storage)</p>
+    </div>
+
+    <div class="instruction-step">
+      <div class="step-num">5</div>
+      <b>Copy Your IDs</b>
+      <p>• <b>Slide ID:</b> Text between <span class="code-snippet">/d/</span> and <span class="code-snippet">/edit</span>.<br>
+         • <b>Folder ID:</b> The final string in your Drive Folder URL.</p>
+    </div>
+
+    <div class="instruction-step">
+      <div class="step-num">6</div>
+      <b>Ready for Launch</b>
+      <p>Paste IDs, click <b>Sync</b> to send tickets, <b>Scan</b> at the door, and <b>Dispatch</b> certificates to attendees.</p>
+    </div>
+
+    <button class="btn btn-blue" style="background:var(--pastel-peach); color:#9a3412; margin-bottom:50px;" onclick="toggleDrawer()">Got it! Let's Launch 🦋</button>
+  </div>
+
+  <div class="dashboard">
+    <span class="help-icon" onclick="toggleDrawer()">❓</span>
+    <div class="brand-area">
+      <h1>Certifly🦋</h1>
+      <p>Elegant Event Management</p>
+    </div>
+
+    <div class="section">
+      <h3><span>🔗</span> Configuration</h3>
+      <input type="text" id="ssUrl" placeholder="Full Spreadsheet URL">
+      <input type="text" id="slideId" placeholder="Slide Template ID">
+      <input type="text" id="folderId" placeholder="Output Folder ID">
+    </div>
+
+    <div class="section">
+      <h3><span>📩</span> Registration Sync</h3>
+      <button id="syncBtn" class="btn btn-blue" style="background:#f3f0ff; color:#6366f1;" onclick="syncTickets()">Sync & Send QR Tickets</button>
+      <div id="syncStatus" class="status-pill">Ready to sync</div>
+    </div>
+
+    <div class="section">
+      <h3><span>📷</span> Entrance Scanner</h3>
+      <div id="reader"></div>
+      <button id="startBtn" class="btn btn-blue" onclick="validateAndStart()">✨ Open Scanner</button>
+      <button id="stopBtn" class="btn btn-red" style="display:none; background:var(--pastel-red); color:#991b1b;" onclick="stopScan()">🛑 Stop Scanner</button>
+      <div id="scanStatus" class="status-pill">System Standby</div>
+    </div>
+
+    <div class="section">
+      <h3><span>🎓</span> Final Dispatch</h3>
+      <button id="certBtn" class="btn btn-green" onclick="validateAndCertify()">🌿 Dispatch All Certificates</button>
+      <div id="certStatus" class="status-pill">No pending tasks</div>
+    </div>
+  </div>
+
+  <script>
+    let scanner;
+    function toggleDrawer() { document.getElementById('drawer').classList.toggle('open'); }
+    
+    function isFormValid() {
+      const inputs = [document.getElementById('ssUrl'), document.getElementById('slideId'), document.getElementById('folderId')];
+      let valid = true;
+      inputs.forEach(input => {
+        if (!input.value.trim()) {
+          input.classList.add('error-shake');
+          setTimeout(() => input.classList.remove('error-shake'), 600);
+          valid = false;
+        }
+      });
+      return valid;
+    }
+
+    function syncTickets() {
+      if (!isFormValid()) return;
+      const btn = document.getElementById('syncBtn');
+      const statusPill = document.getElementById('syncStatus');
+      btn.innerText = "Syncing..."; btn.disabled = true;
+      statusPill.innerText = "Processing Emails & Sheet...";
+      
+      google.script.run.withSuccessHandler(res => {
+        statusPill.innerText = res;
+        btn.innerText = "Sync & Send QR Tickets"; btn.disabled = false;
+      }).sendTicketsToNewRegistrants(document.getElementById('ssUrl').value);
+    }
+
+    function validateAndStart() { if (isFormValid()) startScan(); }
+    function validateAndCertify() { if (isFormValid()) sendCerts(); }
+
+    async function startScan() {
+      scanner = new Html5Qrcode("reader");
+      try {
+        await scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 220 }, (email) => {
+          document.getElementById('scanStatus').innerText = "Verifying...";
+          google.script.run.withSuccessHandler(res => {
+            document.getElementById('scanStatus').innerText = "✅ " + res;
+          }).markAttendance(document.getElementById('ssUrl').value, "Attendees", email);
+        });
+        document.getElementById('startBtn').style.display = 'none';
+        document.getElementById('stopBtn').style.display = 'flex';
+      } catch (err) { alert("Enable camera access."); }
+    }
+
+    async function stopScan() { if (scanner) { await scanner.stop(); document.getElementById('startBtn').style.display = 'flex'; document.getElementById('stopBtn').style.display = 'none'; } }
+
+    function sendCerts() {
+      const btn = document.getElementById('certBtn');
+      const statusPill = document.getElementById('certStatus');
+      btn.innerText = "Generating..."; btn.disabled = true;
+      const conf = { ssUrl: document.getElementById('ssUrl').value, slideId: document.getElementById('slideId').value, folderId: document.getElementById('folderId').value };
+      google.script.run.withSuccessHandler(res => {
+        statusPill.innerText = res;
+        btn.innerText = "🌿 Dispatch All Certificates"; btn.disabled = false;
+      }).processCertificates(conf);
+    }
+  </script>
+</body>
+</html>
