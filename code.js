@@ -6,7 +6,7 @@ function doGet() {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-// 1. ROBUST SYNC & SEND (Updates Col G row-by-row)
+// 1. SYNC & SEND (Updates Col G row-by-row)
 function sendTicketsToNewRegistrants(ssUrl) {
   try {
     const ss = SpreadsheetApp.openByUrl(ssUrl);
@@ -17,17 +17,16 @@ function sendTicketsToNewRegistrants(ssUrl) {
     let sentCount = 0;
 
     for (let i = 1; i < data.length; i++) {
-      const name = data[i][1];  // Column B
-      const email = data[i][2]; // Column C
-      const status = data[i][6]; // Column G (Index 6)
+      const name = data[i][1];  // Col B
+      const email = data[i][2]; // Col C
+      const status = data[i][6]; // Col G
 
       if (email && email.toString().includes("@") && status !== "SENT") {
         try {
           const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(email);
-          
           MailApp.sendEmail({
             to: email,
-            subject: "🎟️ Your Event Ticket - " + name,
+            subject: "🎟️ Your Ticket - " + name,
             htmlBody: `<div style="text-align:center; font-family:sans-serif; border:2px solid #dbeafe; padding:20px; border-radius:20px; max-width:400px; margin:auto;">
                         <h2 style="color:#6366f1;">Hi ${name}!</h2>
                         <p>Your registration is confirmed. Please present this QR code at the door.</p>
@@ -35,19 +34,14 @@ function sendTicketsToNewRegistrants(ssUrl) {
                         <p style="font-size:10px; color:#aaa; margin-top:15px;">Powered by Certifly🦋</p>
                       </div>`
           });
-
           sheet.getRange(i + 1, 7).setValue("SENT");
           SpreadsheetApp.flush(); 
           sentCount++;
-        } catch (emailErr) {
-          continue; 
-        }
+        } catch (emailErr) { continue; }
       }
     }
     return sentCount > 0 ? `✨ Successfully sent ${sentCount} tickets!` : "ℹ️ No new tickets to send.";
-  } catch (e) { 
-    return "❌ Connection Error: Check permissions or URL."; 
-  }
+  } catch (e) { return "❌ Permission Error: Set Sheet to 'Anyone with link can Edit'"; }
 }
 
 // 2. LIVE CHECK-IN (Updates Col F)
@@ -64,7 +58,7 @@ function markAttendance(ssUrl, tabName, email) {
       }
     }
     return "User not found.";
-  } catch (e) { return "Error: " + e.toString(); }
+  } catch (e) { return "❌ Permission Error: Set Sheet to 'Anyone with link can Edit'"; }
 }
 
 // 3. DISPATCH CERTIFICATES (Checks Col F)
@@ -82,12 +76,11 @@ function processCertificates(config) {
         const name = data[i][1]; 
         const email = data[i][2]; 
         
-        // Create copy and process name replacement
         const copy = template.makeCopy(`${name} Certificate`, folder);
         const slideDoc = SlidesApp.openById(copy.getId());
         slideDoc.getSlides()[0].replaceAllText('{{Name}}', name);
         
-        // CRITICAL: Save and close to force name rendering before PDF conversion
+        // CRITICAL: Force save before conversion so name appears in PDF
         slideDoc.saveAndClose();
 
         MailApp.sendEmail(email, "Your Certificate", `Hi ${name}, attached is your certificate!`, {
@@ -96,6 +89,6 @@ function processCertificates(config) {
         count++;
       }
     }
-    return count > 0 ? `${count} Certs Dispatched!` : "No attendees with 'Yes' found.";
-  } catch (e) { return "Error: Check folder/template permissions."; }
+    return count > 0 ? `${count} Certs Dispatched!` : "No attendees found.";
+  } catch (e) { return "❌ Error: Check File/Folder Permissions."; }
 }
